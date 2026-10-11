@@ -2,6 +2,7 @@ package com.techchallenge.os.application.usecases;
 
 import com.techchallenge.os.application.gateway.ports.output.OrdemServicoGateway;
 import com.techchallenge.os.application.responses.OrdemServicoResponse;
+import com.techchallenge.os.application.usecases.assemblers.OrdemServicoResponseAssembler;
 import com.techchallenge.os.domain.models.OrdemServico;
 import com.techchallenge.os.domain.models.valueobjects.StatusOS;
 import org.junit.jupiter.api.BeforeEach;
@@ -31,6 +32,9 @@ class ListarOrdensServicoPorClienteUseCaseTest {
     @Mock
     private OrdemServicoGateway gateway;
 
+    @Mock
+    private OrdemServicoResponseAssembler ordemServicoResponseAssembler;
+
     @InjectMocks
     private ListarOrdensServicoPorClienteUseCase useCase;
 
@@ -38,6 +42,8 @@ class ListarOrdensServicoPorClienteUseCaseTest {
     private Pageable pageable;
     private OrdemServico ordemServico1;
     private OrdemServico ordemServico2;
+    private OrdemServicoResponse response1;
+    private OrdemServicoResponse response2;
 
     @BeforeEach
     void setUp() {
@@ -45,6 +51,8 @@ class ListarOrdensServicoPorClienteUseCaseTest {
         pageable = PageRequest.of(0, 10);
         ordemServico1 = mock(OrdemServico.class);
         ordemServico2 = mock(OrdemServico.class);
+        response1 = mock(OrdemServicoResponse.class);
+        response2 = mock(OrdemServicoResponse.class);
     }
 
     @Test
@@ -56,6 +64,8 @@ class ListarOrdensServicoPorClienteUseCaseTest {
 
         when(gateway.findByFilters(eq(clienteId), eq(null), eq(null),
                 eq(null), eq(null), any(Pageable.class))).thenReturn(page);
+        when(ordemServicoResponseAssembler.montar(ordemServico1)).thenReturn(response1);
+        when(ordemServicoResponseAssembler.montar(ordemServico2)).thenReturn(response2);
 
         // Act
         Page<OrdemServicoResponse> response = useCase.execute(clienteId, pageable);
@@ -65,6 +75,8 @@ class ListarOrdensServicoPorClienteUseCaseTest {
         assertEquals(2, response.getTotalElements());
         verify(gateway, times(1)).findByFilters(eq(clienteId), eq(null), eq(null),
                 eq(null), eq(null), any(Pageable.class));
+        verify(ordemServicoResponseAssembler, times(1)).montar(ordemServico1);
+        verify(ordemServicoResponseAssembler, times(1)).montar(ordemServico2);
     }
 
     @Test
@@ -97,6 +109,7 @@ class ListarOrdensServicoPorClienteUseCaseTest {
         assertEquals(0, response.getTotalElements());
         verify(gateway, times(1)).findByFilters(eq(clienteId), eq(null), eq(null),
                 eq(null), eq(null), any(Pageable.class));
+        verify(ordemServicoResponseAssembler, never()).montar(any());
     }
 
     @Test
@@ -115,20 +128,19 @@ class ListarOrdensServicoPorClienteUseCaseTest {
         // Assert
         verify(gateway, times(1)).findByFilters(eq(clienteId), eq(null), eq(null),
                 eq(null), eq(null), eq(customPageable));
+        verify(ordemServicoResponseAssembler, never()).montar(any());
     }
 
     @Test
     @DisplayName("Deve converter OrdemServico para OrdemServicoResponse")
     void deveConverterOrdemServicoParaOrdemServicoResponse() {
         // Arrange
-        when(ordemServico1.getId()).thenReturn(UUID.randomUUID());
-        when(ordemServico1.getStatus()).thenReturn(StatusOS.RECEBIDA);
-        
         List<OrdemServico> ordensServico = List.of(ordemServico1);
         Page<OrdemServico> page = new PageImpl<>(ordensServico);
 
         when(gateway.findByFilters(eq(clienteId), eq(null), eq(null),
                 eq(null), eq(null), any(Pageable.class))).thenReturn(page);
+        when(ordemServicoResponseAssembler.montar(ordemServico1)).thenReturn(response1);
 
         // Act
         Page<OrdemServicoResponse> response = useCase.execute(clienteId, pageable);
@@ -137,5 +149,6 @@ class ListarOrdensServicoPorClienteUseCaseTest {
         assertNotNull(response);
         assertEquals(1, response.getTotalElements());
         assertNotNull(response.getContent().get(0));
+        verify(ordemServicoResponseAssembler, times(1)).montar(ordemServico1);
     }
 }

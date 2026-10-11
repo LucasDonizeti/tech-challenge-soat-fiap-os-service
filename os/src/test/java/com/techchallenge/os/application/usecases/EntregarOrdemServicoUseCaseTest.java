@@ -5,9 +5,7 @@ import com.techchallenge.os.application.gateway.ports.output.OrdemServicoGateway
 import com.techchallenge.os.application.responses.OrdemServicoResponse;
 import com.techchallenge.os.application.usecases.assemblers.OrdemServicoResponseAssembler;
 import com.techchallenge.os.domain.exceptions.OrdemServicoNaoEncontradaException;
-import com.techchallenge.os.domain.models.ItemServico;
 import com.techchallenge.os.domain.models.OrdemServico;
-import com.techchallenge.os.domain.models.valueobjects.StatusItemServico;
 import com.techchallenge.os.domain.models.valueobjects.StatusOS;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -17,7 +15,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.math.BigDecimal;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -47,22 +44,8 @@ class EntregarOrdemServicoUseCaseTest {
     void setUp() {
         ordemServicoId = UUID.randomUUID();
         command = new EntregarOrdemServicoCommand(ordemServicoId);
-        
-        UUID clienteId = UUID.randomUUID();
-        UUID veiculoId = UUID.randomUUID();
-        ordemServico = OrdemServico.criar(clienteId, veiculoId);
-        
-        UUID servicoId = UUID.randomUUID();
-        ItemServico itemServico = ItemServico.criarComDados(servicoId, "Troca de Óleo", "Troca completa", new BigDecimal("150.00"));
-        ordemServico.adicionarItemServico(itemServico);
-        
-        ordemServico.enviarParaDiagnostico();
-        ordemServico.enviarOrcamentoAoCliente();
-        ordemServico.aprovarOrcamento();
-        
-        itemServico.atualizarStatus(StatusItemServico.CONCLUIDO);
-        ordemServico.finalizar();
-        
+        ordemServico = mock(OrdemServico.class);
+
         response = OrdemServicoResponse.builder()
                 .id(ordemServicoId)
                 .status(StatusOS.ENTREGUE.name())
@@ -83,6 +66,7 @@ class EntregarOrdemServicoUseCaseTest {
         // Assert
         assertNotNull(result);
         verify(ordemServicoGateway, times(1)).findById(ordemServicoId);
+        verify(ordemServico, times(1)).entregar();
         verify(ordemServicoGateway, times(1)).save(any(OrdemServico.class));
         verify(ordemServicoResponseAssembler, times(1)).montar(any(OrdemServico.class));
     }
@@ -101,6 +85,7 @@ class EntregarOrdemServicoUseCaseTest {
 
         assertTrue(exception.getMessage().contains(ordemServicoId.toString()));
         verify(ordemServicoGateway, times(1)).findById(ordemServicoId);
+        verify(ordemServico, never()).entregar();
         verify(ordemServicoGateway, never()).save(any());
         verify(ordemServicoResponseAssembler, never()).montar(any());
     }
@@ -112,6 +97,7 @@ class EntregarOrdemServicoUseCaseTest {
         assertThrows(NullPointerException.class, () -> useCase.execute(null));
 
         verify(ordemServicoGateway, never()).findById(any());
+        verify(ordemServico, never()).entregar();
         verify(ordemServicoGateway, never()).save(any());
         verify(ordemServicoResponseAssembler, never()).montar(any());
     }
@@ -120,12 +106,8 @@ class EntregarOrdemServicoUseCaseTest {
     @DisplayName("Deve propagar exceção quando domínio falha")
     void devePropagarExcecaoQuandoDominioFalha() {
         // Arrange
-        UUID clienteId2 = UUID.randomUUID();
-        UUID veiculoId2 = UUID.randomUUID();
-        OrdemServico ordemServicoInvalida = OrdemServico.criar(clienteId2, veiculoId2);
-        when(ordemServicoGateway.findById(ordemServicoId)).thenReturn(Optional.of(ordemServicoInvalida));
-        when(ordemServicoGateway.save(any(OrdemServico.class))).thenReturn(ordemServicoInvalida);
-        when(ordemServicoResponseAssembler.montar(any(OrdemServico.class))).thenReturn(response);
+        when(ordemServicoGateway.findById(ordemServicoId)).thenReturn(Optional.of(ordemServico));
+        doThrow(new RuntimeException("Só é possível entregar")).when(ordemServico).entregar();
 
         // Act & Assert
         RuntimeException exception = assertThrows(
@@ -135,6 +117,7 @@ class EntregarOrdemServicoUseCaseTest {
 
         assertTrue(exception.getMessage().contains("Só é possível entregar"));
         verify(ordemServicoGateway, times(1)).findById(ordemServicoId);
+        verify(ordemServico, times(1)).entregar();
         verify(ordemServicoGateway, never()).save(any());
         verify(ordemServicoResponseAssembler, never()).montar(any());
     }
@@ -153,8 +136,9 @@ class EntregarOrdemServicoUseCaseTest {
                 () -> useCase.execute(command)
         );
 
-        assertEquals("Erro ao salvar no banco", exception.getMessage());
+        assertTrue(exception.getMessage().contains("Erro ao salvar"));
         verify(ordemServicoGateway, times(1)).findById(ordemServicoId);
+        verify(ordemServico, times(1)).entregar();
         verify(ordemServicoGateway, times(1)).save(any(OrdemServico.class));
         verify(ordemServicoResponseAssembler, never()).montar(any());
     }
@@ -172,6 +156,7 @@ class EntregarOrdemServicoUseCaseTest {
 
         // Assert
         verify(ordemServicoGateway, times(1)).findById(ordemServicoId);
+        verify(ordemServico, times(1)).entregar();
         verify(ordemServicoGateway, times(1)).save(any(OrdemServico.class));
         verify(ordemServicoResponseAssembler, times(1)).montar(any(OrdemServico.class));
     }

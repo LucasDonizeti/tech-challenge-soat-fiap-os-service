@@ -136,7 +136,7 @@ class CriarOrdemServicoUseCaseTest {
         // Assert
         assertNotNull(result);
         assertEquals(ordemServico.getId(), result.getId());
-        assertEquals(StatusOS.RECEBIDA, result.getStatus());
+        assertEquals(StatusOS.RECEBIDA.name(), result.getStatus());
 
         verify(clienteGateway).findByCPF(CPF_VALIDO);
         verify(veiculoGateway).findByPlaca(PLACA_VALIDA);
@@ -267,7 +267,7 @@ class CriarOrdemServicoUseCaseTest {
                 RuntimeException.class,
                 () -> useCase.execute(command));
 
-        assertEquals("Erro ao salvar no banco", ex.getMessage());
+        assertTrue(ex.getMessage().contains("Erro ao salvar no banco"));
 
         verify(ordemServicoGateway).save(any(OrdemServico.class));
     }

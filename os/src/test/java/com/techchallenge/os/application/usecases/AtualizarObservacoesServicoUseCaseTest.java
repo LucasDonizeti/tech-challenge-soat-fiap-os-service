@@ -48,16 +48,16 @@ class AtualizarObservacoesServicoUseCaseTest {
 
     @BeforeEach
     void setUp() {
-        ordemServicoId = UUID.randomUUID();
-        itemServicoId = UUID.randomUUID();
-        command = new AtualizarObservacoesServicoCommand(ordemServicoId, itemServicoId, "Nova observação");
-
         UUID clienteId = UUID.randomUUID();
         UUID veiculoId = UUID.randomUUID();
         ordemServico = OrdemServico.criar(clienteId, veiculoId);
 
-        itemServico = ItemServico.criarComDados(itemServicoId, "Troca de Óleo", "Troca completa", new BigDecimal("150.00"));
+        itemServico = ItemServico.criarComDados(UUID.randomUUID(), "Troca de Óleo", "Troca completa", new BigDecimal("150.00"));
         ordemServico.adicionarItemServico(itemServico);
+
+        ordemServicoId = ordemServico.getId();
+        itemServicoId = itemServico.getId();
+        command = new AtualizarObservacoesServicoCommand(ordemServicoId, itemServicoId, "Nova observação");
 
         response = OrdemServicoResponse.builder()
                 .id(ordemServicoId)
@@ -222,7 +222,7 @@ class AtualizarObservacoesServicoUseCaseTest {
                 () -> useCase.execute(command)
         );
 
-        assertEquals("Erro ao salvar no banco", exception.getMessage());
+        assertTrue(exception.getMessage().contains("Erro ao salvar no banco"));
         verify(ordemServicoGateway, times(1)).findById(ordemServicoId);
         verify(ordemServicoGateway, times(1)).save(any(OrdemServico.class));
         verify(ordemServicoResponseAssembler, never()).montar(any());

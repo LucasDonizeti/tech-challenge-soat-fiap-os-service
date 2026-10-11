@@ -113,9 +113,7 @@ class EnviarParaDiagnosticoUseCaseTest {
     void devePropagarExcecaoQuandoDominioFalha() {
         // Arrange
         when(ordemServicoGateway.findById(ordemServicoId)).thenReturn(Optional.of(ordemServico));
-        when(ordemServicoGateway.save(any(OrdemServico.class))).thenReturn(ordemServico);
-        when(ordemServicoResponseAssembler.montar(any(OrdemServico.class))).thenReturn(response);
-        
+
         // Mock para lançar exceção no domínio
         ordemServico.atualizarStatus(StatusOS.EM_EXECUCAO); // Status inválido para envio
 

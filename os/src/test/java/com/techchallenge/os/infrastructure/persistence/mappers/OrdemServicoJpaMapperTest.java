@@ -139,6 +139,15 @@ class OrdemServicoJpaMapperTest {
     @Test
     @DisplayName("Deve converter entity para ordem de serviço")
     void deveConverterEntityParaOrdemServico() {
+        ItemServicoEntity itemEntity = ItemServicoEntity.builder()
+                .id(UUID.randomUUID())
+                .ordemServicoId(id)
+                .servicoId(UUID.randomUUID())
+                .status(ItemServicoEntity.StatusItemServicoEntity.PENDENTE)
+                .valorServico(new BigDecimal("100.00"))
+                .valorMro(BigDecimal.ZERO)
+                .build();
+
         OrdemServicoEntity entity = OrdemServicoEntity.builder()
                 .id(id)
                 .clienteId(clienteId)
@@ -148,11 +157,12 @@ class OrdemServicoJpaMapperTest {
                 .dataInicioExecucao(dataInicioExecucao)
                 .dataFinalizacao(dataFinalizacao)
                 .dataUltimaMudancaStatus(dataUltimaMudancaStatus)
+                .itensServico(List.of(itemEntity))
                 .build();
 
         ItemServico itemServico = ItemServico.reconstruir(
-                UUID.randomUUID(),
-                UUID.randomUUID(),
+                itemEntity.getId(),
+                itemEntity.getServicoId(),
                 "Serviço Teste",
                 "Descrição",
                 StatusItemServico.PENDENTE,

@@ -50,12 +50,13 @@ class AdicionarServicoOrdemUseCaseTest {
 
     @BeforeEach
     void setUp() {
-        UUID ordemServicoId = UUID.randomUUID();
-        UUID servicoId = UUID.randomUUID();
         UUID clienteId = UUID.randomUUID();
         UUID veiculoId = UUID.randomUUID();
+        UUID servicoId = UUID.randomUUID();
 
-        command = new AdicionarServicoOrdemCommand(ordemServicoId, servicoId);
+        ordemServico = OrdemServico.criar(clienteId, veiculoId);
+
+        command = new AdicionarServicoOrdemCommand(ordemServico.getId(), servicoId);
 
         servicoResumo = ServicoResumo.builder()
                 .id(servicoId)
@@ -64,10 +65,8 @@ class AdicionarServicoOrdemUseCaseTest {
                 .preco(new BigDecimal("150.00"))
                 .build();
 
-        ordemServico = OrdemServico.criar(clienteId, veiculoId);
-
         response = OrdemServicoResponse.builder()
-                .id(ordemServicoId)
+                .id(ordemServico.getId())
                 .status(StatusOS.RECEBIDA.name())
                 .build();
     }
@@ -87,6 +86,7 @@ class AdicionarServicoOrdemUseCaseTest {
         // Assert
         assertNotNull(result);
         assertEquals(ordemServico.getId(), result.getId());
+        assertEquals(StatusOS.RECEBIDA.name(), result.getStatus());
 
         verify(ordemServicoGateway, times(1)).findById(command.getOrdemServicoId());
         verify(servicoGateway, times(1)).findById(command.getServicoId());
