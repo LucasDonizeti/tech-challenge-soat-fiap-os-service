@@ -1,0 +1,12 @@
+package com.techchallenge.os.domain.events;
+
+import java.util.UUID;
+
+/**
+ * Evento de domínio emitido quando o orçamento está pronto para aprovação.
+ */
+public record OrcamentoProntoEvent(
+    UUID ordemServicoId,
+    UUID clienteId,
+    UUID veiculoId
+) {}

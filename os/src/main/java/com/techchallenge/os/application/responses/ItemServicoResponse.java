@@ -1,0 +1,61 @@
+package com.techchallenge.os.application.responses;
+
+import com.techchallenge.os.domain.models.ItemServico;
+import com.techchallenge.os.domain.models.valueobjects.StatusItemServico;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class ItemServicoResponse {
+    
+    private UUID id;
+    private UUID servicoId;
+    private String servicoNome;
+    private String servicoDescricao;
+    private StatusItemServico status;
+    private String observacoes;
+    private BigDecimal valorServico;
+    private BigDecimal valorMro;
+    private BigDecimal valorTotal;
+    private LocalDateTime dataInicioExecucao;
+    private LocalDateTime dataFinalizacao;
+    private List<ItemMROResponse> mros;
+    
+    public static ItemServicoResponse from(ItemServico itemServico) {
+        if (itemServico == null) {
+            return null;
+        }
+        
+        List<ItemMROResponse> mroResponses = itemServico.getMrosServicos() != null ?
+                itemServico.getMrosServicos().stream()
+                        .map(ItemMROResponse::from)
+                        .collect(Collectors.toList()) :
+                List.of();
+        
+        return ItemServicoResponse.builder()
+                .id(itemServico.getId())
+                .servicoId(itemServico.getServicoId())
+                .servicoNome(itemServico.getServicoNome())
+                .servicoDescricao(itemServico.getServicoDescricao())
+                .status(itemServico.getStatus())
+                .observacoes(itemServico.getObservacoes())
+                .valorServico(itemServico.getValorServico())
+                .valorMro(itemServico.getValorMro())
+                .valorTotal(itemServico.calcularValorTotal())
+                .dataInicioExecucao(itemServico.getDataInicioExecucao())
+                .dataFinalizacao(itemServico.getDataFinalizacao())
+                .mros(mroResponses)
+                .build();
+    }
+}
