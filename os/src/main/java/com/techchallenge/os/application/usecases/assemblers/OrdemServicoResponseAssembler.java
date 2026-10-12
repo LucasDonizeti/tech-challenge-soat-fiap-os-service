@@ -7,7 +7,9 @@ import com.techchallenge.os.application.gateway.ports.output.models.VeiculoResum
 import com.techchallenge.os.application.responses.OrdemServicoResponse;
 import com.techchallenge.os.domain.models.OrdemServico;
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
 
+@Component
 @RequiredArgsConstructor
 public class OrdemServicoResponseAssembler {
     private final ClienteGateway clienteGateway;

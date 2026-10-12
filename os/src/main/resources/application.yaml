@@ -7,6 +7,15 @@ spring:
     name: ${SPRING_APPLICATION_NAME:os-service}
     version: ${SPRING_APPLICATION_VERSION:0.0.1-SNAPSHOT}
 
+  cloud:
+    openfeign:
+      client:
+        config:
+          default:
+            connectTimeout: 5000
+            readTimeout: 10000
+            loggerLevel: BASIC
+
   springdoc:
     api-docs:
       path: /v3/api-docs
@@ -62,3 +71,7 @@ logging:
 newrelic:
   config:
     agent_enabled: ${ENABLE_NEWRELIC:false}
+
+catalog:
+  service:
+    url: ${CATALOG_SERVICE_URL:http://catalog-service:8080}
