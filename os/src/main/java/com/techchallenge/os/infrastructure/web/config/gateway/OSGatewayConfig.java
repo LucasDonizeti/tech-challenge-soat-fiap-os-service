@@ -4,6 +4,7 @@ import com.techchallenge.os.application.gateway.ports.input.*;
 import com.techchallenge.os.application.gateway.ports.output.*;
 import com.techchallenge.os.application.usecases.*;
 import com.techchallenge.os.application.usecases.assemblers.OrdemServicoResponseAssembler;
+import com.techchallenge.os.infrastructure.notifications.NotificacaoService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -75,8 +76,22 @@ public class OSGatewayConfig {
 
     @Bean
     public EnviarOrcamentoAoClienteInput enviarOrcamentoAoClienteInput(OrdemServicoGateway ordemServicoGateway,
-                                                                       OrdemServicoResponseAssembler ordemServicoResponseAssembler) {
-        return new EnviarOrcamentoAoClienteUseCase(ordemServicoGateway, ordemServicoResponseAssembler);
+                                                                       OrdemServicoResponseAssembler ordemServicoResponseAssembler,
+                                                                       ClienteGateway clienteGateway,
+                                                                       OsEventPublisher osEventPublisher) {
+        return new EnviarOrcamentoAoClienteUseCase(
+                ordemServicoGateway,
+                ordemServicoResponseAssembler,
+                clienteGateway,
+                osEventPublisher
+        );
+    }
+
+    @Bean
+    public NotificarClienteOrcamentoComPixUseCase notificarClienteOrcamentoComPixUseCase(
+            ClienteGateway clienteGateway,
+            NotificacaoOrcamentoComPixGateway notificacaoGateway) {
+        return new NotificarClienteOrcamentoComPixUseCase(clienteGateway, notificacaoGateway);
     }
 
     @Bean

@@ -1,5 +1,7 @@
 package com.techchallenge.os.domain.events;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
@@ -8,5 +10,11 @@ import java.util.UUID;
 public record OrcamentoProntoEvent(
     UUID ordemServicoId,
     UUID clienteId,
-    UUID veiculoId
+    UUID veiculoId,
+    BigDecimal valorTotal,
+    String descricaoServicos,
+    LocalDateTime dataOrcamento,
+    String payerEmail,
+    String payerIdentificationType,
+    String payerIdentificationNumber
 ) {}

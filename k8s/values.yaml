@@ -1,6 +1,6 @@
 # ==============================================================================
-# values.yaml — valores padrão (ambiente de desenvolvimento/local)
-# Para produção, sobrescreva com: helm install -f values-prod.yaml
+# values.yaml — configuração padrão do chart (AWS SNS/SQS).
+# Para desenvolvimento local, sobrescreva MESSAGING_TYPE=rabbit fora do Helm.
 # ==============================================================================
 
 replicaCount: 1
@@ -100,6 +100,7 @@ configmap:
   SPRING_PORT: "8080"
   SPRING_APPLICATION_NAME: "os-service-dev"
   SPRING_APPLICATION_VERSION: "0.0.1-SNAPSHOT"
+  MESSAGING_TYPE: "aws"
   SPRING_JPA_SHOW_SQL: "false"
   SPRING_HIBERNATE_DIALECT: "org.hibernate.dialect.MySQLDialect"
   SPRING_DATASOURCE_DRIVER_CLASS_NAME: "com.mysql.cj.jdbc.Driver"

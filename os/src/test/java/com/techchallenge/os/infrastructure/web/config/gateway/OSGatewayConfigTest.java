@@ -26,6 +26,9 @@ class OSGatewayConfigTest {
     private ClienteGateway clienteGateway;
 
     @Mock
+    private OsEventPublisher osEventPublisher;
+
+    @Mock
     private VeiculoGateway veiculoGateway;
 
     @Mock
@@ -182,7 +185,9 @@ class OSGatewayConfigTest {
         // Act
         EnviarOrcamentoAoClienteInput input = osGatewayConfig.enviarOrcamentoAoClienteInput(
                 ordemServicoGateway,
-                ordemServicoResponseAssembler
+                ordemServicoResponseAssembler,
+                clienteGateway,
+                osEventPublisher
         );
 
         // Assert

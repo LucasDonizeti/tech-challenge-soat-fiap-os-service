@@ -20,3 +20,11 @@ O chart usa o serviço `os-service`, o NodePort `30082` e o contexto `/v1/os-ser
 cd os
 .\mvnw.cmd -B verify
 ```
+
+## Mensageria local
+
+O perfil local usa RabbitMQ (`MESSAGING_TYPE=rabbit`). Suba o broker pelo Compose
+central do projeto (`docker compose up -d rabbitmq`) antes de iniciar OS e Billing.
+O painel de gerenciamento fica disponível em `http://localhost:15672`.
+
+No EKS, o chart Helm seleciona `MESSAGING_TYPE=aws` para usar SNS/SQS.

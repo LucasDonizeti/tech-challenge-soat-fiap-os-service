@@ -1,5 +1,5 @@
 server:
-  port: ${SPRING_PORT:8080}
+  port: ${SPRING_PORT:8081}
   forward-headers-strategy: framework
 
 spring:
@@ -8,6 +8,9 @@ spring:
     version: ${SPRING_APPLICATION_VERSION:0.0.1-SNAPSHOT}
 
   cloud:
+    aws:
+      region:
+        static: ${AWS_REGION:us-east-1}
     openfeign:
       client:
         config:
@@ -15,6 +18,11 @@ spring:
             connectTimeout: 5000
             readTimeout: 10000
             loggerLevel: BASIC
+  rabbitmq:
+    host: ${SPRING_RABBITMQ_HOST:localhost}
+    port: ${SPRING_RABBITMQ_PORT:5672}
+    username: ${SPRING_RABBITMQ_USERNAME:guest}
+    password: ${SPRING_RABBITMQ_PASSWORD:guest}
 
   springdoc:
     api-docs:
@@ -74,4 +82,28 @@ newrelic:
 
 catalog:
   service:
-    url: ${CATALOG_SERVICE_URL:http://catalog-service:8080}
+    url: ${CATALOG_SERVICE_URL:http://localhost:8080}
+
+aws:
+  sns:
+    topics:
+      orcamento-pronto: ${AWS_SNS_TOPIC_ORCAMENTO_PRONTO:}
+  sqs:
+    queues:
+      cobranca-pix-gerada: ${AWS_SQS_QUEUE_COBRANCA_PIX_GERADA:}
+      pagamento-aprovado: ${AWS_SQS_QUEUE_PAGAMENTO_APROVADO:}
+      pagamento-recusado: ${AWS_SQS_QUEUE_PAGAMENTO_RECUSADO:}
+
+messaging:
+  type: ${MESSAGING_TYPE:rabbit}
+  rabbit:
+    exchange: ${RABBITMQ_EVENTS_EXCHANGE:billing.events}
+    queues:
+      cobranca-pix-gerada: ${RABBITMQ_QUEUE_COBRANCA_PIX_GERADA:os.cobranca-pix-gerada}
+      pagamento-aprovado: ${RABBITMQ_QUEUE_PAGAMENTO_APROVADO:os.pagamento-aprovado}
+      pagamento-recusado: ${RABBITMQ_QUEUE_PAGAMENTO_RECUSADO:os.pagamento-recusado}
+    routing-keys:
+      orcamento-pronto: ${RABBITMQ_KEY_ORCAMENTO_PRONTO:orcamento.pronto}
+      cobranca-pix-gerada: ${RABBITMQ_KEY_COBRANCA_PIX_GERADA:cobranca.pix.gerada}
+      pagamento-aprovado: ${RABBITMQ_KEY_PAGAMENTO_APROVADO:pagamento.aprovado}
+      pagamento-recusado: ${RABBITMQ_KEY_PAGAMENTO_RECUSADO:pagamento.recusado}

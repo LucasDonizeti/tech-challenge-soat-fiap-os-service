@@ -192,13 +192,15 @@ public class OrdemServico extends AbstractAggregateRoot<OrdemServico> {
     }
     
     public void enviarOrcamentoAoCliente() {
-        if (this.status != StatusOS.EM_DIAGNOSTICO) {
-            throw new ValidacaoOrdemServicoException("Só é possível enviar orçamento ao cliente quando a OS está no status EM_DIAGNOSTICO. Status atual: " + this.status);
-        }
-        if (!possuiItensServico()) {
-            throw new ValidacaoOrdemServicoException("OS deve ter pelo menos um serviço para enviar orçamento ao cliente");
-        }
+        enviarOrcamentoAoCliente(null, null, null);
+    }
 
+    public OrcamentoProntoEvent enviarOrcamentoAoCliente(
+            String payerEmail,
+            String payerIdentificationType,
+            String payerIdentificationNumber
+    ) {
+        validarEnvioOrcamentoAoCliente();
         StatusOS statusAnterior = this.status;
         this.status = StatusOS.AGUARDANDO_APROVACAO;
         LocalDateTime timestamp = LocalDateTime.now();
@@ -207,7 +209,31 @@ public class OrdemServico extends AbstractAggregateRoot<OrdemServico> {
 
         this.dataUltimaMudancaStatus = timestamp;
 
-        registerEvent(new OrcamentoProntoEvent(id, cliente, veiculo));
+        String descricaoServicos = itensServico.stream()
+                .map(item -> item.getServicoNome() + ": " + item.getServicoDescricao())
+                .collect(java.util.stream.Collectors.joining("; "));
+        OrcamentoProntoEvent event = new OrcamentoProntoEvent(
+                id,
+                cliente,
+                veiculo,
+                calcularValorTotal(),
+                descricaoServicos,
+                timestamp,
+                payerEmail,
+                payerIdentificationType,
+                payerIdentificationNumber
+        );
+        registerEvent(event);
+        return event;
+    }
+
+    public void validarEnvioOrcamentoAoCliente() {
+        if (this.status != StatusOS.EM_DIAGNOSTICO) {
+            throw new ValidacaoOrdemServicoException("Só é possível enviar orçamento ao cliente quando a OS está no status EM_DIAGNOSTICO. Status atual: " + this.status);
+        }
+        if (!possuiItensServico()) {
+            throw new ValidacaoOrdemServicoException("OS deve ter pelo menos um serviço para enviar orçamento ao cliente");
+        }
     }
     
     public void aprovarOrcamento() {

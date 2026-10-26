@@ -1,11 +1,15 @@
 package com.techchallenge.os.application.usecases;
 
 import com.techchallenge.os.application.commands.EnviarOrcamentoAoClienteCommand;
+import com.techchallenge.os.application.gateway.ports.output.ClienteGateway;
+import com.techchallenge.os.application.gateway.ports.output.OsEventPublisher;
 import com.techchallenge.os.application.gateway.ports.output.OrdemServicoGateway;
+import com.techchallenge.os.application.gateway.ports.output.models.ClienteResumo;
 import com.techchallenge.os.application.responses.OrdemServicoResponse;
 import com.techchallenge.os.application.usecases.assemblers.OrdemServicoResponseAssembler;
 import com.techchallenge.os.domain.exceptions.OrdemServicoNaoEncontradaException;
 import com.techchallenge.os.domain.exceptions.ValidacaoOrdemServicoException;
+import com.techchallenge.os.domain.events.OrcamentoProntoEvent;
 import com.techchallenge.os.domain.models.ItemServico;
 import com.techchallenge.os.domain.models.OrdemServico;
 import com.techchallenge.os.domain.models.valueobjects.StatusOS;
@@ -31,6 +35,12 @@ class EnviarOrcamentoAoClienteUseCaseTest {
 
     @Mock
     private OrdemServicoGateway ordemServicoGateway;
+
+    @Mock
+    private ClienteGateway clienteGateway;
+
+    @Mock
+    private OsEventPublisher osEventPublisher;
 
     @Mock
     private OrdemServicoResponseAssembler ordemServicoResponseAssembler;
@@ -69,6 +79,11 @@ class EnviarOrcamentoAoClienteUseCaseTest {
     void deveEnviarOrcamentoAoClienteComSucesso() {
         // Arrange
         when(ordemServicoGateway.findById(command.getOrdemServicoId())).thenReturn(Optional.of(ordemServico));
+        when(clienteGateway.findById(ordemServico.getCliente())).thenReturn(Optional.of(ClienteResumo.builder()
+                .id(ordemServico.getCliente())
+                .cpf("12345678901")
+                .email("cliente@example.com")
+                .build()));
         when(ordemServicoGateway.save(any(OrdemServico.class))).thenReturn(ordemServico);
         when(ordemServicoResponseAssembler.montar(any(OrdemServico.class))).thenReturn(response);
 
@@ -82,6 +97,11 @@ class EnviarOrcamentoAoClienteUseCaseTest {
 
         verify(ordemServicoGateway, times(1)).findById(command.getOrdemServicoId());
         verify(ordemServicoGateway, times(1)).save(any(OrdemServico.class));
+        org.mockito.ArgumentCaptor<OrcamentoProntoEvent> eventCaptor =
+                org.mockito.ArgumentCaptor.forClass(OrcamentoProntoEvent.class);
+        verify(osEventPublisher).publishOrcamentoPronto(eventCaptor.capture());
+        assertEquals(ordemServico.getId(), eventCaptor.getValue().ordemServicoId());
+        assertEquals("cliente@example.com", eventCaptor.getValue().payerEmail());
         verify(ordemServicoResponseAssembler, times(1)).montar(any(OrdemServico.class));
     }
 
@@ -101,6 +121,7 @@ class EnviarOrcamentoAoClienteUseCaseTest {
 
         verify(ordemServicoGateway, times(1)).findById(command.getOrdemServicoId());
         verify(ordemServicoGateway, never()).save(any());
+        verify(osEventPublisher, never()).publishOrcamentoPronto(any());
         verify(ordemServicoResponseAssembler, never()).montar(any());
     }
 
@@ -123,6 +144,7 @@ class EnviarOrcamentoAoClienteUseCaseTest {
 
         verify(ordemServicoGateway, times(1)).findById(command.getOrdemServicoId());
         verify(ordemServicoGateway, never()).save(any());
+        verify(osEventPublisher, never()).publishOrcamentoPronto(any());
         verify(ordemServicoResponseAssembler, never()).montar(any());
     }
 
