@@ -3,6 +3,7 @@ package com.techchallenge.os.infrastructure.web.config.security;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -44,7 +45,10 @@ public class SecutiryConfig {
                         // Rotas de cliente — exigem token JWT com ROLE_CLIENTE
                         .requestMatchers("/api/cliente/**").hasRole("CLIENTE")
 
-                        // Rotas de OS (gestão interna) — exigem token JWT com ROLE_ADMIN
+                        // Serviços podem consultar uma OS para processar o orçamento no billing-service.
+                        .requestMatchers(HttpMethod.GET, "/v1/os/*").hasAnyRole("ADMIN", "SERVICE")
+
+                        // Demais rotas de OS (gestão interna) — exigem token JWT com ROLE_ADMIN
                         .requestMatchers("/v1/os/**").hasRole("ADMIN")
 
                         // Rotas admin

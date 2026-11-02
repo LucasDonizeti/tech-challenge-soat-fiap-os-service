@@ -87,6 +87,20 @@ class RecusarOrcamentoUseCaseTest {
     }
 
     @Test
+    @DisplayName("Deve ignorar evento duplicado quando a OS já está cancelada")
+    void deveIgnorarEventoDuplicadoQuandoOrdemJaEstaCancelada() {
+        ordemServico.recusarOrcamento("Preço muito alto");
+        when(ordemServicoGateway.findById(command.getOrdemServicoId())).thenReturn(Optional.of(ordemServico));
+        when(ordemServicoResponseAssembler.montar(ordemServico)).thenReturn(response);
+
+        OrdemServicoResponse result = useCase.execute(command);
+
+        assertEquals(StatusOS.CANCELADA.name(), result.getStatus());
+        verify(ordemServicoGateway, never()).save(any());
+        verify(ordemServicoResponseAssembler).montar(ordemServico);
+    }
+
+    @Test
     @DisplayName("Deve recusar orçamento com motivo padrão quando não informado")
     void deveRecusarOrcamentoComMotivoPadraoQuandoNaoInformado() {
         // Arrange

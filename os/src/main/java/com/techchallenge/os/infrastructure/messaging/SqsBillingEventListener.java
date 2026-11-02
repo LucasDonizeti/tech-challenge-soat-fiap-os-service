@@ -16,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 @Component
 @RequiredArgsConstructor
@@ -36,6 +37,7 @@ public class SqsBillingEventListener {
     }
 
     @SqsListener("${aws.sqs.queues.pagamento-aprovado}")
+    @Transactional
     public void receivePagamentoAprovado(String body) {
         PagamentoAprovadoEvent event = readEvent(body, PagamentoAprovadoEvent.class);
         aprovarOrcamentoInput.execute(new AprovarOrcamentoCommand(event.ordemServicoId()));
@@ -43,6 +45,7 @@ public class SqsBillingEventListener {
     }
 
     @SqsListener("${aws.sqs.queues.pagamento-recusado}")
+    @Transactional
     public void receivePagamentoRecusado(String body) {
         PagamentoRecusadoEvent event = readEvent(body, PagamentoRecusadoEvent.class);
         recusarOrcamentoInput.execute(new RecusarOrcamentoCommand(

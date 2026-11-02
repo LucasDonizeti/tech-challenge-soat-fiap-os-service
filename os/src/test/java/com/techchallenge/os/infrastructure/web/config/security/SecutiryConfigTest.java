@@ -44,6 +44,22 @@ class SecutiryConfigTest {
     }
 
     @Test
+    @DisplayName("Deve converter ROLE_SERVICE para chamadas entre serviços")
+    void deveConverterRoleService() {
+        JwtAuthenticationConverter converter = securityConfig.jwtAuthenticationConverter();
+        var jwt = org.springframework.security.oauth2.jwt.Jwt.withTokenValue("service-token")
+                .header("alg", "HS256")
+                .claim("role", "SERVICE")
+                .build();
+
+        var authentication = converter.convert(jwt);
+
+        assertNotNull(authentication);
+        assertTrue(authentication.getAuthorities().stream()
+                .anyMatch(authority -> "ROLE_SERVICE".equals(authority.getAuthority())));
+    }
+
+    @Test
     @DisplayName("Deve usar secret customizada quando configurada")
     void deveUsarSecretCustomizadaQuandoConfigurada() {
         // Arrange

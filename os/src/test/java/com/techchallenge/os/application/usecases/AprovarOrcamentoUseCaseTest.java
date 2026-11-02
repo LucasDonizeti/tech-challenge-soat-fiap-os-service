@@ -87,6 +87,20 @@ class AprovarOrcamentoUseCaseTest {
     }
 
     @Test
+    @DisplayName("Deve ignorar evento duplicado quando a OS já está em execução")
+    void deveIgnorarEventoDuplicadoQuandoOrdemJaEstaEmExecucao() {
+        ordemServico.aprovarOrcamento();
+        when(ordemServicoGateway.findById(command.getOrdemServicoId())).thenReturn(Optional.of(ordemServico));
+        when(ordemServicoResponseAssembler.montar(ordemServico)).thenReturn(response);
+
+        OrdemServicoResponse result = useCase.execute(command);
+
+        assertEquals(StatusOS.EM_EXECUCAO.name(), result.getStatus());
+        verify(ordemServicoGateway, never()).save(any());
+        verify(ordemServicoResponseAssembler).montar(ordemServico);
+    }
+
+    @Test
     @DisplayName("Deve lançar exceção quando ordem de serviço não encontrada")
     void deveLancarExcecaoQuandoOrdemServicoNaoEncontrada() {
         // Arrange

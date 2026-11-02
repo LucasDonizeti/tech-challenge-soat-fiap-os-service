@@ -4,36 +4,25 @@ import com.techchallenge.os.domain.exceptions.ValidacaoClienteException;
 import com.techchallenge.os.domain.exceptions.ValidacaoMROException;
 import com.techchallenge.os.domain.exceptions.ValidacaoServicoException;
 import com.techchallenge.os.domain.exceptions.ValidacaoVeiculoException;
+import com.techchallenge.os.infrastructure.security.ServiceJwtTokenProvider;
 import feign.RequestInterceptor;
 import feign.Response;
 import feign.codec.ErrorDecoder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 
 /**
- * Configuração Feign compartilhada entre todos os clients do catalog-service.
- * Traduz erros HTTP em exceções de domínio do os-service e propaga o token JWT.
+ * Autentica chamadas Feign ao catálogo como serviço e traduz erros HTTP em exceções de domínio.
  */
 @Configuration
 public class CatalogFeignConfig {
 
-    /**
-     * Propaga o token JWT da requisição atual para todas as chamadas Feign ao catalog-service.
-     * Lê o token do SecurityContext (populado pelo Spring Security OAuth2 Resource Server)
-     * e injeta no header Authorization: Bearer <token>.
-     */
     @Bean
-    public RequestInterceptor jwtPropagationInterceptor() {
-        return requestTemplate -> {
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            if (authentication instanceof JwtAuthenticationToken jwtAuth) {
-                String tokenValue = jwtAuth.getToken().getTokenValue();
-                requestTemplate.header("Authorization", "Bearer " + tokenValue);
-            }
-        };
+    public RequestInterceptor serviceJwtInterceptor(ServiceJwtTokenProvider tokenProvider) {
+        return requestTemplate -> requestTemplate.header(
+                "Authorization",
+                "Bearer " + tokenProvider.createToken()
+        );
     }
 
     @Bean

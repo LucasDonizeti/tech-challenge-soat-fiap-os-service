@@ -102,8 +102,14 @@ messaging:
       cobranca-pix-gerada: ${RABBITMQ_QUEUE_COBRANCA_PIX_GERADA:os.cobranca-pix-gerada}
       pagamento-aprovado: ${RABBITMQ_QUEUE_PAGAMENTO_APROVADO:os.pagamento-aprovado}
       pagamento-recusado: ${RABBITMQ_QUEUE_PAGAMENTO_RECUSADO:os.pagamento-recusado}
+      saga-initiated: ${RABBITMQ_QUEUE_SAGA_INITIATED:os.saga.payment.initiated}
+      saga-confirmed: ${RABBITMQ_QUEUE_SAGA_CONFIRMED:os.saga.payment.confirmed}
+      saga-expired: ${RABBITMQ_QUEUE_SAGA_EXPIRED:os.saga.payment.expired}
     routing-keys:
       orcamento-pronto: ${RABBITMQ_KEY_ORCAMENTO_PRONTO:orcamento.pronto}
       cobranca-pix-gerada: ${RABBITMQ_KEY_COBRANCA_PIX_GERADA:cobranca.pix.gerada}
       pagamento-aprovado: ${RABBITMQ_KEY_PAGAMENTO_APROVADO:pagamento.aprovado}
       pagamento-recusado: ${RABBITMQ_KEY_PAGAMENTO_RECUSADO:pagamento.recusado}
+      saga-initiated: ${RABBITMQ_KEY_SAGA_INITIATED:saga.payment.initiated}
+      saga-confirmed: ${RABBITMQ_KEY_SAGA_CONFIRMED:saga.payment.confirmed}
+      saga-expired: ${RABBITMQ_KEY_SAGA_EXPIRED:saga.payment.expired}

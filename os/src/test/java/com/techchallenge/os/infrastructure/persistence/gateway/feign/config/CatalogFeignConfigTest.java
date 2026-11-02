@@ -4,6 +4,7 @@ import com.techchallenge.os.domain.exceptions.ValidacaoClienteException;
 import com.techchallenge.os.domain.exceptions.ValidacaoMROException;
 import com.techchallenge.os.domain.exceptions.ValidacaoServicoException;
 import com.techchallenge.os.domain.exceptions.ValidacaoVeiculoException;
+import com.techchallenge.os.infrastructure.security.ServiceJwtTokenProvider;
 import feign.Request;
 import feign.RequestTemplate;
 import feign.Response;
@@ -13,11 +14,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
@@ -35,13 +31,7 @@ class CatalogFeignConfigTest {
     private CatalogFeignConfig.CatalogErrorDecoder errorDecoder;
 
     @Mock
-    private SecurityContext securityContext;
-
-    @Mock
-    private JwtAuthenticationToken jwtAuthenticationToken;
-
-    @Mock
-    private Jwt jwt;
+    private ServiceJwtTokenProvider tokenProvider;
 
     @BeforeEach
     void setUp() {
@@ -50,44 +40,39 @@ class CatalogFeignConfigTest {
     }
 
     @Test
-    @DisplayName("Deve criar RequestInterceptor que propaga token JWT")
-    void deveCriarRequestInterceptorQuePropagaTokenJWT() {
+    @DisplayName("Deve enviar token JWT de serviço ao catálogo")
+    void deveCriarRequestInterceptorQueEnviaTokenDeServico() {
         // Arrange
-        String tokenValue = "test-jwt-token";
-        when(jwt.getTokenValue()).thenReturn(tokenValue);
-        when(jwtAuthenticationToken.getToken()).thenReturn(jwt);
-        when(securityContext.getAuthentication()).thenReturn(jwtAuthenticationToken);
-        SecurityContextHolder.setContext(securityContext);
+        String tokenValue = "service-jwt-token";
+        when(tokenProvider.createToken()).thenReturn(tokenValue);
 
         // Act
-        feign.RequestInterceptor interceptor = catalogFeignConfig.jwtPropagationInterceptor();
+        feign.RequestInterceptor interceptor = catalogFeignConfig.serviceJwtInterceptor(tokenProvider);
         RequestTemplate template = new RequestTemplate();
         interceptor.apply(template);
 
         // Assert
         assertEquals("Bearer " + tokenValue, template.headers().get("Authorization").iterator().next());
-
-        // Cleanup
-        SecurityContextHolder.clearContext();
     }
 
     @Test
-    @DisplayName("Deve criar RequestInterceptor sem token quando autenticação não é JWT")
-    void deveCriarRequestInterceptorSemTokenQuandoAutenticacaoNaoEJWT() {
-        // Arrange
-        when(securityContext.getAuthentication()).thenReturn(null);
-        SecurityContextHolder.setContext(securityContext);
+    @DisplayName("Deve gerar token de serviço com role SERVICE e validade curta")
+    void deveGerarTokenDeServicoComRoleEValidadeCurta() {
+        String secret = "mySuperSecretKeyForJWTTokenGenerationThatIsSecureEnough";
+        var provider = new ServiceJwtTokenProvider(secret);
+        var signingKey = io.jsonwebtoken.security.Keys.hmacShaKeyFor(
+                secret.getBytes(StandardCharsets.UTF_8)
+        );
 
-        // Act
-        feign.RequestInterceptor interceptor = catalogFeignConfig.jwtPropagationInterceptor();
-        RequestTemplate template = new RequestTemplate();
-        interceptor.apply(template);
+        var claims = io.jsonwebtoken.Jwts.parserBuilder()
+                .setSigningKey(signingKey)
+                .build()
+                .parseClaimsJws(provider.createToken())
+                .getBody();
 
-        // Assert
-        assertNull(template.headers().get("Authorization"));
-
-        // Cleanup
-        SecurityContextHolder.clearContext();
+        assertEquals("os-service", claims.getSubject());
+        assertEquals("SERVICE", claims.get("role"));
+        assertTrue(claims.getExpiration().getTime() - claims.getIssuedAt().getTime() <= 5 * 60 * 1000);
     }
 
     @Test

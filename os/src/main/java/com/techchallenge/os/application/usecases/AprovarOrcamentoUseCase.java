@@ -8,6 +8,7 @@ import com.techchallenge.os.application.responses.OrdemServicoResponse;
 import com.techchallenge.os.application.usecases.assemblers.OrdemServicoResponseAssembler;
 import com.techchallenge.os.domain.exceptions.OrdemServicoNaoEncontradaException;
 import com.techchallenge.os.domain.models.OrdemServico;
+import com.techchallenge.os.domain.models.valueobjects.StatusOS;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -24,6 +25,12 @@ public class AprovarOrcamentoUseCase implements AprovarOrcamentoInput {
         // Buscar ordem de serviço
         OrdemServico ordemServico = ordemServicoGateway.findById(command.getOrdemServicoId())
                 .orElseThrow(() -> new OrdemServicoNaoEncontradaException(command.getOrdemServicoId()));
+
+        if (ordemServico.getStatus() == StatusOS.EM_EXECUCAO) {
+            log.info("Orçamento já aprovado; ignorando evento duplicado: ordemServicoId={}",
+                    command.getOrdemServicoId());
+            return ordemServicoResponseAssembler.montar(ordemServico);
+        }
         
         // Aprovar orçamento (validações são feitas no domínio)
         ordemServico.aprovarOrcamento();
