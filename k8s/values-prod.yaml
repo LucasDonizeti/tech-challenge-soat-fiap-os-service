@@ -88,6 +88,12 @@ configmap:
   SPRING_APPLICATION_NAME: "os-service-prod"
   SPRING_APPLICATION_VERSION: "0.0.1-SNAPSHOT"
   MESSAGING_TYPE: "aws"
+  AWS_REGION: "us-east-1"
+  AWS_SQS_QUEUE_COBRANCA_PIX_GERADA: "oficina-cobranca-pix-gerada"
+  AWS_SQS_QUEUE_PAGAMENTO_APROVADO: "oficina-pagamento-aprovado"
+  AWS_SQS_QUEUE_PAGAMENTO_RECUSADO: "oficina-pagamento-recusado"
+  AWS_SQS_QUEUE_SAGA_INITIATED: "oficina-saga-initiated"
+  AWS_SQS_QUEUE_SAGA_EXPIRED: "oficina-saga-expired"
   CATALOG_SERVICE_URL: "http://catalog-service.default.svc.cluster.local:80/v1/catalog-service"
   SPRING_JPA_SHOW_SQL: "false"
   SPRING_HIBERNATE_DIALECT: "org.hibernate.dialect.MySQLDialect"
@@ -110,6 +116,5 @@ secret:
   SECURITY_USER_PASSWORD: ""
   NEW_RELIC_LICENSE_KEY: ""
 
-# Supply AWS_SNS_TOPIC_ORCAMENTO_PRONTO and the three AWS_SQS_QUEUE_* values
-# through extraEnv using the resources provisioned for the target environment.
+# SNS topic ARN is populated by the deploy workflow using the AWS account ID.
 extraEnv: []

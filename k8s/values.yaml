@@ -114,7 +114,7 @@ configmap:
   NEW_RELIC_DISTRIBUTED_TRACING_ENABLED: "true"
 
 secret:
-  SPRING_DATASOURCE_URL: "jdbc:mysql://host.docker.internal:3306/oficina?useSSL=false&allowPublicKeyRetrieval=true"
+  SPRING_DATASOURCE_URL: "jdbc:mysql://host.docker.internal:3306/os_db?useSSL=false&allowPublicKeyRetrieval=true"
   SPRING_DATASOURCE_USERNAME: "user"
   SPRING_DATASOURCE_PASSWORD: "password"
   JWT_SECRET: "superchavesecretajwtdepelomenostrintaedoiscaracteres"

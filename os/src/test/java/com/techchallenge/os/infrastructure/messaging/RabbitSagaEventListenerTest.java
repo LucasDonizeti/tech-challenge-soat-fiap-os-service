@@ -1,12 +1,9 @@
 package com.techchallenge.os.infrastructure.messaging;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.techchallenge.os.application.commands.AprovarOrcamentoCommand;
 import com.techchallenge.os.application.commands.RecusarOrcamentoCommand;
-import com.techchallenge.os.application.gateway.ports.input.AprovarOrcamentoInput;
 import com.techchallenge.os.application.gateway.ports.input.RecusarOrcamentoInput;
 import com.techchallenge.os.application.usecases.NotificarClienteOrcamentoComPixUseCase;
-import com.techchallenge.os.domain.events.SagaPaymentConfirmedEvent;
 import com.techchallenge.os.domain.events.SagaPaymentInitiatedEvent;
 import com.techchallenge.os.domain.events.SagaPaymentExpiredEvent;
 import org.junit.jupiter.api.BeforeEach;
@@ -30,9 +27,6 @@ import static org.mockito.Mockito.verify;
 class RabbitSagaEventListenerTest {
 
     @Mock
-    private AprovarOrcamentoInput aprovarOrcamentoInput;
-
-    @Mock
     private RecusarOrcamentoInput recusarOrcamentoInput;
 
     @Mock
@@ -46,7 +40,6 @@ class RabbitSagaEventListenerTest {
         objectMapper = new ObjectMapper().findAndRegisterModules();
         listener = new RabbitSagaEventListener(
                 objectMapper,
-                aprovarOrcamentoInput,
                 recusarOrcamentoInput,
                 notificarClienteOrcamentoComPixUseCase
         );
@@ -83,76 +76,6 @@ class RabbitSagaEventListenerTest {
 
         // Assert
         verify(notificarClienteOrcamentoComPixUseCase).execute(any());
-    }
-
-    @Test
-    @DisplayName("Deve aprovar orçamento quando pagamento é aprovado")
-    void deveAprovarOrcamentoQuandoPagamentoAprovado() throws Exception {
-        // Arrange
-        UUID sagaId = UUID.randomUUID();
-        UUID ordemServicoId = UUID.randomUUID();
-        
-        SagaPaymentConfirmedEvent event = new SagaPaymentConfirmedEvent(
-                sagaId,
-                UUID.randomUUID(),
-                UUID.randomUUID(),
-                ordemServicoId,
-                UUID.randomUUID(),
-                "123456789",
-                "APROVADO",
-                BigDecimal.valueOf(150.50),
-                LocalDateTime.now(),
-                null,
-                LocalDateTime.now()
-        );
-        
-        String json = objectMapper.writeValueAsString(event);
-
-        // Act
-        listener.receiveSagaPaymentConfirmed(json);
-
-        // Assert
-        ArgumentCaptor<AprovarOrcamentoCommand> captor = 
-                ArgumentCaptor.forClass(AprovarOrcamentoCommand.class);
-        verify(aprovarOrcamentoInput).execute(captor.capture());
-        
-        assertEquals(ordemServicoId, captor.getValue().getOrdemServicoId());
-    }
-
-    @Test
-    @DisplayName("Deve recusar orçamento quando pagamento é recusado")
-    void deveRecusarOrcamentoQuandoPagamentoRecusado() throws Exception {
-        // Arrange
-        UUID sagaId = UUID.randomUUID();
-        UUID ordemServicoId = UUID.randomUUID();
-        String motivo = "Saldo insuficiente";
-        
-        SagaPaymentConfirmedEvent event = new SagaPaymentConfirmedEvent(
-                sagaId,
-                UUID.randomUUID(),
-                UUID.randomUUID(),
-                ordemServicoId,
-                UUID.randomUUID(),
-                "123456789",
-                "RECUSADO",
-                BigDecimal.valueOf(150.50),
-                LocalDateTime.now(),
-                motivo,
-                LocalDateTime.now()
-        );
-        
-        String json = objectMapper.writeValueAsString(event);
-
-        // Act
-        listener.receiveSagaPaymentConfirmed(json);
-
-        // Assert
-        ArgumentCaptor<RecusarOrcamentoCommand> captor = 
-                ArgumentCaptor.forClass(RecusarOrcamentoCommand.class);
-        verify(recusarOrcamentoInput).execute(captor.capture());
-        
-        assertEquals(ordemServicoId, captor.getValue().getOrdemServicoId());
-        assertEquals(motivo, captor.getValue().getMotivo());
     }
 
     @Test
@@ -195,18 +118,6 @@ class RabbitSagaEventListenerTest {
         // Act & Assert
         org.junit.jupiter.api.Assertions.assertThrows(RuntimeException.class, () -> {
             listener.receiveSagaPaymentInitiated(invalidJson);
-        });
-    }
-
-    @Test
-    @DisplayName("Deve lançar exceção se JSON for inválido para SagaPaymentConfirmed")
-    void deveLancarExcecaoQuandoJsonInvalidoParaSagaConfirmed() {
-        // Arrange
-        String invalidJson = "invalid json";
-
-        // Act & Assert
-        org.junit.jupiter.api.Assertions.assertThrows(RuntimeException.class, () -> {
-            listener.receiveSagaPaymentConfirmed(invalidJson);
         });
     }
 

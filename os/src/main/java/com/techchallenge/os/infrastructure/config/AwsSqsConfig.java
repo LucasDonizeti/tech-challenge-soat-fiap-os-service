@@ -18,11 +18,19 @@ public class AwsSqsConfig {
     @Value("${aws.sqs.queues.pagamento-recusado:}")
     private String pagamentoRecusadoQueue;
 
+    @Value("${aws.sqs.queues.saga-initiated:}")
+    private String sagaInitiatedQueue;
+
+    @Value("${aws.sqs.queues.saga-expired:}")
+    private String sagaExpiredQueue;
+
     @PostConstruct
     void validateQueues() {
         requireQueue(cobrancaPixGeradaQueue, "AWS_SQS_QUEUE_COBRANCA_PIX_GERADA");
         requireQueue(pagamentoAprovadoQueue, "AWS_SQS_QUEUE_PAGAMENTO_APROVADO");
         requireQueue(pagamentoRecusadoQueue, "AWS_SQS_QUEUE_PAGAMENTO_RECUSADO");
+        requireQueue(sagaInitiatedQueue, "AWS_SQS_QUEUE_SAGA_INITIATED");
+        requireQueue(sagaExpiredQueue, "AWS_SQS_QUEUE_SAGA_EXPIRED");
     }
 
     private void requireQueue(String queue, String environmentVariable) {

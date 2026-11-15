@@ -158,10 +158,17 @@ jobs:
             --namespace=${{ env.K8S_NAMESPACE }} \
             --dry-run=client -o yaml | kubectl apply -f -
 
+      - name: Obter ID da conta AWS
+        id: aws-account
+        run: |
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          echo "account_id=$ACCOUNT_ID" >> "$GITHUB_OUTPUT"
+
       - name: Helm upgrade --install
         env:
           ECR_REGISTRY: ${{ needs.push-image-ecr.outputs.ecr_registry }}
           IMAGE_TAG: ${{ needs.push-image-ecr.outputs.image_tag }}
+          AWS_ACCOUNT_ID: ${{ steps.aws-account.outputs.account_id }}
           RDS_ENDPOINT: ${{ steps.rds-info.outputs.rds_endpoint }}
           DB_PASSWORD: ${{ steps.rds-secret.outputs.db_password }}
         run: |
@@ -171,13 +178,14 @@ jobs:
             -f ./${{ env.HELM_CHART_PATH }}/values-prod.yaml \
             --set image.repository=$ECR_REGISTRY/${{ env.ECR_REPOSITORY }} \
             --set image.tag=$IMAGE_TAG \
-            --set secret.SPRING_DATASOURCE_URL="jdbc:mysql://${RDS_ENDPOINT}:3306/oficina" \
+            --set secret.SPRING_DATASOURCE_URL="jdbc:mysql://${RDS_ENDPOINT}:3306/os_db" \
             --set secret.SPRING_DATASOURCE_USERNAME="${{ secrets.DB_USERNAME }}" \
             --set secret.SPRING_DATASOURCE_PASSWORD="$DB_PASSWORD" \
             --set secret.JWT_SECRET="${{ secrets.JWT_SECRET }}" \
             --set secret.SECURITY_USER_NAME="${{ secrets.SECURITY_USER_NAME }}" \
             --set secret.SECURITY_USER_PASSWORD="${{ secrets.SECURITY_USER_PASSWORD }}" \
             --set secret.NEW_RELIC_LICENSE_KEY="${{ secrets.NEW_RELIC_LICENSE_KEY }}" \
+            --set-string configmap.AWS_SNS_TOPIC_ORCAMENTO_PRONTO="arn:aws:sns:${AWS_REGION}:${AWS_ACCOUNT_ID}:oficina-orcamento-pronto" \
             --rollback-on-failure \
             --timeout 10m \
             --wait

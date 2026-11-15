@@ -20,18 +20,11 @@ public class RabbitMQSagaConfig {
 
     // Filas de saga (OS Service recebe)
     public static final String QUEUE_SAGA_INITIATED = "os.saga.payment.initiated";
-    public static final String QUEUE_SAGA_CONFIRMED = "os.saga.payment.confirmed";
     public static final String QUEUE_SAGA_EXPIRED = "os.saga.payment.expired";
 
     @Bean
     public Queue sagaInitiatedQueue(
             @Value("${messaging.rabbit.queues.saga-initiated:" + QUEUE_SAGA_INITIATED + "}") String queueName) {
-        return new Queue(queueName, true);
-    }
-
-    @Bean
-    public Queue sagaConfirmedQueue(
-            @Value("${messaging.rabbit.queues.saga-confirmed:" + QUEUE_SAGA_CONFIRMED + "}") String queueName) {
         return new Queue(queueName, true);
     }
 
@@ -46,14 +39,6 @@ public class RabbitMQSagaConfig {
             @Qualifier("sagaInitiatedQueue") Queue queue,
             TopicExchange billingEventsExchange,
             @Value("${messaging.rabbit.routing-keys.saga-initiated:saga.payment.initiated}") String routingKey) {
-        return BindingBuilder.bind(queue).to(billingEventsExchange).with(routingKey);
-    }
-
-    @Bean
-    public Binding sagaConfirmedBinding(
-            @Qualifier("sagaConfirmedQueue") Queue queue,
-            TopicExchange billingEventsExchange,
-            @Value("${messaging.rabbit.routing-keys.saga-confirmed:saga.payment.confirmed}") String routingKey) {
         return BindingBuilder.bind(queue).to(billingEventsExchange).with(routingKey);
     }
 

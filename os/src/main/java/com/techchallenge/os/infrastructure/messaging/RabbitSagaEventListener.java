@@ -3,12 +3,9 @@ package com.techchallenge.os.infrastructure.messaging;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.techchallenge.os.domain.events.SagaPaymentConfirmedEvent;
 import com.techchallenge.os.domain.events.SagaPaymentInitiatedEvent;
 import com.techchallenge.os.domain.events.SagaPaymentExpiredEvent;
-import com.techchallenge.os.application.commands.AprovarOrcamentoCommand;
 import com.techchallenge.os.application.commands.RecusarOrcamentoCommand;
-import com.techchallenge.os.application.gateway.ports.input.AprovarOrcamentoInput;
 import com.techchallenge.os.application.gateway.ports.input.RecusarOrcamentoInput;
 import com.techchallenge.os.application.usecases.NotificarClienteOrcamentoComPixUseCase;
 import com.techchallenge.os.domain.events.CobrancaPixGeradaEvent;
@@ -21,7 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Listener de eventos de Saga do Billing-Service via RabbitMQ
- * Processa eventos de iniciação, confirmação e expiração de pagamentos PIX
+ * Processa eventos de iniciação e expiração de pagamentos PIX
  */
 @Slf4j
 @Component
@@ -30,7 +27,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class RabbitSagaEventListener {
 
     private final ObjectMapper objectMapper;
-    private final AprovarOrcamentoInput aprovarOrcamentoInput;
     private final RecusarOrcamentoInput recusarOrcamentoInput;
     private final NotificarClienteOrcamentoComPixUseCase notificarClienteOrcamentoComPixUseCase;
 
@@ -65,41 +61,6 @@ public class RabbitSagaEventListener {
         } catch (Exception e) {
             log.error("Erro ao processar SagaPaymentInitiatedEvent", e);
             throw new RuntimeException("Falha ao processar evento de saga iniciada", e);
-        }
-    }
-
-    /**
-     * Recebe evento SagaPaymentConfirmedEvent quando pagamento é confirmado
-     * Aprova ou recusa orçamento conforme resultado (APROVADO, RECUSADO, EXPIRADO)
-     */
-    @RabbitListener(queues = "${messaging.rabbit.queues.saga-confirmed:os.saga.payment.confirmed}")
-    @Transactional
-    public void receiveSagaPaymentConfirmed(String body) {
-        try {
-            SagaPaymentConfirmedEvent event = readEvent(body, SagaPaymentConfirmedEvent.class);
-            
-            log.info("SagaPaymentConfirmedEvent recebido: sagaId={}, statusFinal={}, ordemServicoId={}",
-                    event.getSagaId(), event.getStatusFinal(), event.getOrdemServicoId());
-
-            switch (event.getStatusFinal()) {
-                case "APROVADO":
-                    aprovarOrcamentoInput.execute(new AprovarOrcamentoCommand(event.getOrdemServicoId()));
-                    log.info("Orçamento aprovado via saga: ordemServicoId={}", event.getOrdemServicoId());
-                    break;
-                case "RECUSADO":
-                case "EXPIRADO":
-                case "CANCELADO":
-                    recusarOrcamentoInput.execute(
-                            new RecusarOrcamentoCommand(event.getOrdemServicoId(), event.getMotivo()));
-                    log.info("Orçamento recusado via saga: ordemServicoId={}, motivo={}",
-                            event.getOrdemServicoId(), event.getMotivo());
-                    break;
-                default:
-                    log.warn("Status de saga desconhecido: {}", event.getStatusFinal());
-            }
-        } catch (Exception e) {
-            log.error("Erro ao processar SagaPaymentConfirmedEvent", e);
-            throw new RuntimeException("Falha ao processar evento de saga confirmada", e);
         }
     }
 

@@ -33,7 +33,7 @@ spring:
     show-actuator: false
 
   datasource:
-    url: "${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/oficina?useSSL=false&allowPublicKeyRetrieval=true}"
+    url: "${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/os_db?useSSL=false&allowPublicKeyRetrieval=true}"
     username: ${SPRING_DATASOURCE_USERNAME:user}
     password: ${SPRING_DATASOURCE_PASSWORD:password}
     driver-class-name: ${SPRING_DATASOURCE_DRIVER_CLASS_NAME:com.mysql.cj.jdbc.Driver}
@@ -49,8 +49,8 @@ spring:
 
   flyway:
     enabled: true
-    baseline-on-migrate: true
-    locations: classpath:migration
+    baseline-on-migrate: false
+    locations: classpath:db/migration
 
   security:
     jwt:
@@ -93,6 +93,8 @@ aws:
       cobranca-pix-gerada: ${AWS_SQS_QUEUE_COBRANCA_PIX_GERADA:}
       pagamento-aprovado: ${AWS_SQS_QUEUE_PAGAMENTO_APROVADO:}
       pagamento-recusado: ${AWS_SQS_QUEUE_PAGAMENTO_RECUSADO:}
+      saga-initiated: ${AWS_SQS_QUEUE_SAGA_INITIATED:}
+      saga-expired: ${AWS_SQS_QUEUE_SAGA_EXPIRED:}
 
 messaging:
   type: ${MESSAGING_TYPE:rabbit}
@@ -103,7 +105,6 @@ messaging:
       pagamento-aprovado: ${RABBITMQ_QUEUE_PAGAMENTO_APROVADO:os.pagamento-aprovado}
       pagamento-recusado: ${RABBITMQ_QUEUE_PAGAMENTO_RECUSADO:os.pagamento-recusado}
       saga-initiated: ${RABBITMQ_QUEUE_SAGA_INITIATED:os.saga.payment.initiated}
-      saga-confirmed: ${RABBITMQ_QUEUE_SAGA_CONFIRMED:os.saga.payment.confirmed}
       saga-expired: ${RABBITMQ_QUEUE_SAGA_EXPIRED:os.saga.payment.expired}
     routing-keys:
       orcamento-pronto: ${RABBITMQ_KEY_ORCAMENTO_PRONTO:orcamento.pronto}
@@ -111,5 +112,4 @@ messaging:
       pagamento-aprovado: ${RABBITMQ_KEY_PAGAMENTO_APROVADO:pagamento.aprovado}
       pagamento-recusado: ${RABBITMQ_KEY_PAGAMENTO_RECUSADO:pagamento.recusado}
       saga-initiated: ${RABBITMQ_KEY_SAGA_INITIATED:saga.payment.initiated}
-      saga-confirmed: ${RABBITMQ_KEY_SAGA_CONFIRMED:saga.payment.confirmed}
       saga-expired: ${RABBITMQ_KEY_SAGA_EXPIRED:saga.payment.expired}
