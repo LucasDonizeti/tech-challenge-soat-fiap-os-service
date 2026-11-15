@@ -103,6 +103,16 @@ class SwaggerConfigTest {
     }
 
     @Test
+    @DisplayName("Deve usar o context path do serviço como URL do servidor")
+    void deveUsarContextPathComoUrlDoServidor() {
+        ReflectionTestUtils.setField(swaggerConfig, "serverContextPath", "/v1/os-service");
+
+        OpenAPI openAPI = swaggerConfig.customOpenAPI();
+
+        assertEquals("/v1/os-service", openAPI.getServers().get(0).getUrl());
+    }
+
+    @Test
     @DisplayName("Deve configurar esquema de segurança JWT Bearer")
     void deveConfigurarEsquemaDeSegurancaJWTBearer() {
         // Act
