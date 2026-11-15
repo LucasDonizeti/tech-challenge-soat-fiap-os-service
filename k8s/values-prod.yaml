@@ -89,6 +89,7 @@ configmap:
   SPRING_APPLICATION_VERSION: "0.0.1-SNAPSHOT"
   MESSAGING_TYPE: "aws"
   AWS_REGION: "us-east-1"
+  SPRING_CLOUD_AWS_SQS_QUEUE_NOT_FOUND_STRATEGY: "FAIL"
   AWS_SQS_QUEUE_COBRANCA_PIX_GERADA: "oficina-cobranca-pix-gerada"
   AWS_SQS_QUEUE_PAGAMENTO_APROVADO: "oficina-pagamento-aprovado"
   AWS_SQS_QUEUE_PAGAMENTO_RECUSADO: "oficina-pagamento-recusado"

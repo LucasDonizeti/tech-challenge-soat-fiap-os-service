@@ -27,4 +27,12 @@ O perfil local usa RabbitMQ (`MESSAGING_TYPE=rabbit`). Suba o broker pelo Compos
 central do projeto (`docker compose up -d rabbitmq`) antes de iniciar OS e Billing.
 O painel de gerenciamento fica disponível em `http://localhost:15672`.
 
-No EKS, o chart Helm seleciona `MESSAGING_TYPE=aws` para usar SNS/SQS.
+No EKS, o chart Helm seleciona `MESSAGING_TYPE=aws` para usar SNS/SQS. As filas são
+provisionadas pelo Terraform no repositório `k8s-infra`; a estratégia
+`SPRING_CLOUD_AWS_SQS_QUEUE_NOT_FOUND_STRATEGY=FAIL` impede que o serviço tente
+criá-las se estiverem ausentes. Em ambiente local, o serviço usa RabbitMQ
+(`MESSAGING_TYPE=rabbit`), sem criação de filas SQS.
+Para essa configuração iniciar, a infraestrutura do `k8s-infra` precisa ter aplicado
+o Launch Template dos nodes com IMDSv2 e hop limit 2 e as permissões de mensageria
+na `LabRole`. Os pods obtêm credenciais da role do node; por isso, outros pods no
+mesmo node também podem herdar essas permissões.
