@@ -32,7 +32,11 @@ provisionadas pelo Terraform no repositório `k8s-infra`; a estratégia
 `SPRING_CLOUD_AWS_SQS_QUEUE_NOT_FOUND_STRATEGY=FAIL` impede que o serviço tente
 criá-las se estiverem ausentes. Em ambiente local, o serviço usa RabbitMQ
 (`MESSAGING_TYPE=rabbit`), sem criação de filas SQS.
+Como a dependência AMQP continua no classpath para uso local, o chart de produção
+define `RABBIT_HEALTH_CHECK_ENABLED=false` para não incluir o RabbitMQ inativo no
+health geral quando o transporte usado é AWS.
 Para essa configuração iniciar, a infraestrutura do `k8s-infra` precisa ter aplicado
 o Launch Template dos nodes com IMDSv2 e hop limit 2 e as permissões de mensageria
-na `LabRole`. Os pods obtêm credenciais da role do node; por isso, outros pods no
-mesmo node também podem herdar essas permissões.
+na `LabRole`. Ela pode publicar em todos os tópicos e enviar/consumir mensagens em
+todas as filas SNS/SQS provisionadas pelo módulo. Os pods obtêm credenciais da role
+do node; por isso, outros pods no mesmo node também podem herdar essas permissões.
