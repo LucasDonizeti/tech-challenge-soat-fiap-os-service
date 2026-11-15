@@ -1,0 +1,120 @@
+# ==============================================================================
+# values-prod.yaml — sobrescreve values.yaml para ambiente de produção (AWS EKS)
+# Uso na pipeline:
+#   helm upgrade --install os-service ./k8s \
+#     -f k8s/values-prod.yaml \
+#     --set image.tag=$IMAGE_TAG \
+#     --set secret.SPRING_DATASOURCE_URL=$SPRING_DATASOURCE_URL \
+#     --set secret.SPRING_DATASOURCE_USERNAME=$SPRING_DATASOURCE_USERNAME \
+#     --set secret.SPRING_DATASOURCE_PASSWORD=$SPRING_DATASOURCE_PASSWORD \
+#     --set secret.JWT_SECRET=$JWT_SECRET \
+#     --set secret.SECURITY_USER_NAME=$SECURITY_USER_NAME \
+#     --set secret.SECURITY_USER_PASSWORD=$SECURITY_USER_PASSWORD
+# ==============================================================================
+
+replicaCount: 2
+
+image:
+  repository: <AWS_ACCOUNT_ID>.dkr.ecr.<AWS_REGION>.amazonaws.com/os-service
+  pullPolicy: Always
+  tag: "latest"
+
+service:
+  # API Gateway -> VPC Link -> NLB -> NodePort do os-service
+  type: NodePort
+  ports:
+    - port: 80
+      targetPort: 8080
+      nodePort: 30082
+
+imagePullSecrets:
+  - name: aws-ecr-secret
+
+nameOverride: ""
+fullnameOverride: "os-service"
+
+serviceAccount:
+  create: true
+  automount: true
+  annotations: {}
+  name: ""
+
+ingress:
+  enabled: false
+  className: alb
+  annotations: {}
+  hosts: []
+  tls: []
+
+httpRoute:
+  enabled: false
+
+autoscaling:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 4
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+resources:
+  requests:
+    memory: "512Mi"
+    cpu: "250m"
+  limits:
+    memory: "2Gi"
+    cpu: "1"
+
+livenessProbe:
+  httpGet:
+    path: /v1/os-service/actuator/health/liveness
+    port: 8080
+  initialDelaySeconds: 90
+  periodSeconds: 15
+  failureThreshold: 3
+  timeoutSeconds: 5
+
+readinessProbe:
+  httpGet:
+    path: /v1/os-service/actuator/health/readiness
+    port: 8080
+  initialDelaySeconds: 60
+  periodSeconds: 10
+  failureThreshold: 3
+  timeoutSeconds: 5
+
+configmap:
+  SPRING_PORT: "8080"
+  SERVER_SERVLET_CONTEXT_PATH: "/v1/os-service"
+  SPRING_APPLICATION_NAME: "os-service-prod"
+  SPRING_APPLICATION_VERSION: "0.0.1-SNAPSHOT"
+  MESSAGING_TYPE: "aws"
+  AWS_REGION: "us-east-1"
+  AWS_SQS_QUEUE_COBRANCA_PIX_GERADA: "oficina-cobranca-pix-gerada"
+  AWS_SQS_QUEUE_PAGAMENTO_APROVADO: "oficina-pagamento-aprovado"
+  AWS_SQS_QUEUE_PAGAMENTO_RECUSADO: "oficina-pagamento-recusado"
+  AWS_SQS_QUEUE_SAGA_INITIATED: "oficina-saga-initiated"
+  AWS_SQS_QUEUE_SAGA_EXPIRED: "oficina-saga-expired"
+  CATALOG_SERVICE_URL: "http://catalog-service.default.svc.cluster.local:80/v1/catalog-service"
+  SPRING_JPA_SHOW_SQL: "false"
+  SPRING_HIBERNATE_DIALECT: "org.hibernate.dialect.MySQLDialect"
+  SPRING_DATASOURCE_DRIVER_CLASS_NAME: "com.mysql.cj.jdbc.Driver"
+  LOG_LEVEL: "INFO"
+  SECURITY_LOG_LEVEL: "WARN"
+  JWT_LOG_LEVEL: "ERROR"
+  JWT_EXPIRATION: "3600"
+  SECURITY_USER_ROLES: "ADMIN"
+  NEW_RELIC_APP_NAME: "os-service-prod"
+  NEW_RELIC_LOGS_IN_CONTEXT_ENABLED: "true"
+  NEW_RELIC_DISTRIBUTED_TRACING_ENABLED: "true"
+
+secret:
+  SPRING_DATASOURCE_URL: ""
+  SPRING_DATASOURCE_USERNAME: ""
+  SPRING_DATASOURCE_PASSWORD: ""
+  JWT_SECRET: ""
+  SECURITY_USER_NAME: ""
+  SECURITY_USER_PASSWORD: ""
+  NEW_RELIC_LICENSE_KEY: ""
+
+# SNS topic ARN is populated by the deploy workflow using the AWS account ID.
+extraEnv: []

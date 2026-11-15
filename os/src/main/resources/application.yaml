@@ -1,0 +1,115 @@
+server:
+  port: ${SPRING_PORT:8081}
+  forward-headers-strategy: framework
+
+spring:
+  application:
+    name: ${SPRING_APPLICATION_NAME:os-service}
+    version: ${SPRING_APPLICATION_VERSION:0.0.1-SNAPSHOT}
+
+  cloud:
+    aws:
+      region:
+        static: ${AWS_REGION:us-east-1}
+    openfeign:
+      client:
+        config:
+          default:
+            connectTimeout: 5000
+            readTimeout: 10000
+            loggerLevel: BASIC
+  rabbitmq:
+    host: ${SPRING_RABBITMQ_HOST:localhost}
+    port: ${SPRING_RABBITMQ_PORT:5672}
+    username: ${SPRING_RABBITMQ_USERNAME:guest}
+    password: ${SPRING_RABBITMQ_PASSWORD:guest}
+
+  springdoc:
+    api-docs:
+      path: /v3/api-docs
+    swagger-ui:
+      path: /swagger-ui.html
+      enabled: true
+    show-actuator: false
+
+  datasource:
+    url: "${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/os_db?useSSL=false&allowPublicKeyRetrieval=true}"
+    username: ${SPRING_DATASOURCE_USERNAME:user}
+    password: ${SPRING_DATASOURCE_PASSWORD:password}
+    driver-class-name: ${SPRING_DATASOURCE_DRIVER_CLASS_NAME:com.mysql.cj.jdbc.Driver}
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: ${SPRING_JPA_SHOW_SQL:false}
+    properties:
+      hibernate:
+        dialect: ${SPRING_HIBERNATE_DIALECT:org.hibernate.dialect.MySQLDialect}
+        format_sql: true
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: false
+    locations: classpath:db/migration
+
+  security:
+    jwt:
+      secret: ${JWT_SECRET:mySuperSecretKeyForJWTTokenGenerationThatIsSecureEnough}
+      expiration: ${JWT_EXPIRATION:86400}
+    user:
+      name: ${SECURITY_USER_NAME:admin}
+      password: ${SECURITY_USER_PASSWORD:secret123}
+      roles: ${SECURITY_USER_ROLES:ADMIN}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never
+
+logging:
+  level:
+    com.techchallenge.os: ${LOG_LEVEL:INFO}
+    org.springframework.security: ${SECURITY_LOG_LEVEL:WARN}
+    io.jsonwebtoken: ${JWT_LOG_LEVEL:WARN}
+
+newrelic:
+  config:
+    agent_enabled: ${ENABLE_NEWRELIC:false}
+
+catalog:
+  service:
+    url: ${CATALOG_SERVICE_URL:http://localhost:8080}
+
+aws:
+  sns:
+    topics:
+      orcamento-pronto: ${AWS_SNS_TOPIC_ORCAMENTO_PRONTO:}
+  sqs:
+    queues:
+      cobranca-pix-gerada: ${AWS_SQS_QUEUE_COBRANCA_PIX_GERADA:}
+      pagamento-aprovado: ${AWS_SQS_QUEUE_PAGAMENTO_APROVADO:}
+      pagamento-recusado: ${AWS_SQS_QUEUE_PAGAMENTO_RECUSADO:}
+      saga-initiated: ${AWS_SQS_QUEUE_SAGA_INITIATED:}
+      saga-expired: ${AWS_SQS_QUEUE_SAGA_EXPIRED:}
+
+messaging:
+  type: ${MESSAGING_TYPE:rabbit}
+  rabbit:
+    exchange: ${RABBITMQ_EVENTS_EXCHANGE:billing.events}
+    queues:
+      cobranca-pix-gerada: ${RABBITMQ_QUEUE_COBRANCA_PIX_GERADA:os.cobranca-pix-gerada}
+      pagamento-aprovado: ${RABBITMQ_QUEUE_PAGAMENTO_APROVADO:os.pagamento-aprovado}
+      pagamento-recusado: ${RABBITMQ_QUEUE_PAGAMENTO_RECUSADO:os.pagamento-recusado}
+      saga-initiated: ${RABBITMQ_QUEUE_SAGA_INITIATED:os.saga.payment.initiated}
+      saga-expired: ${RABBITMQ_QUEUE_SAGA_EXPIRED:os.saga.payment.expired}
+    routing-keys:
+      orcamento-pronto: ${RABBITMQ_KEY_ORCAMENTO_PRONTO:orcamento.pronto}
+      cobranca-pix-gerada: ${RABBITMQ_KEY_COBRANCA_PIX_GERADA:cobranca.pix.gerada}
+      pagamento-aprovado: ${RABBITMQ_KEY_PAGAMENTO_APROVADO:pagamento.aprovado}
+      pagamento-recusado: ${RABBITMQ_KEY_PAGAMENTO_RECUSADO:pagamento.recusado}
+      saga-initiated: ${RABBITMQ_KEY_SAGA_INITIATED:saga.payment.initiated}
+      saga-expired: ${RABBITMQ_KEY_SAGA_EXPIRED:saga.payment.expired}
