@@ -1,0 +1,338 @@
+package com.techchallenge.os.domain.models;
+
+import com.techchallenge.os.domain.events.*;
+import com.techchallenge.os.domain.exceptions.ValidacaoOrdemServicoException;
+import com.techchallenge.os.domain.models.valueobjects.StatusItemServico;
+import com.techchallenge.os.domain.models.valueobjects.StatusOS;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.AbstractAggregateRoot;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
+@Getter
+@Slf4j
+public class OrdemServico extends AbstractAggregateRoot<OrdemServico> {
+    
+    private UUID id;
+    private UUID cliente;
+    private UUID veiculo;
+    private StatusOS status;
+    private LocalDateTime dataCriacao;
+    private LocalDateTime dataInicioExecucao;
+    private LocalDateTime dataFinalizacao;
+    private LocalDateTime dataUltimaMudancaStatus;
+    private List<ItemServico> itensServico = new ArrayList<>();
+    
+    // Construtor padrão para JPA
+    protected OrdemServico() {}
+    
+    // Factory method para criação
+    public static OrdemServico criar(UUID cliente, UUID veiculo) {
+        if (cliente == null) {
+            throw new ValidacaoOrdemServicoException("Cliente não pode ser nulo");
+        }
+        if (veiculo == null) {
+            throw new ValidacaoOrdemServicoException("Veículo não pode ser nulo");
+        }
+
+        OrdemServico ordemServico = new OrdemServico();
+        ordemServico.id = UUID.randomUUID();
+        ordemServico.cliente = cliente;
+        ordemServico.veiculo = veiculo;
+        ordemServico.status = StatusOS.RECEBIDA;
+        ordemServico.dataCriacao = LocalDateTime.now();
+
+        ordemServico.logMudancaStatus(null, ordemServico.status, ordemServico.dataCriacao);
+
+        ordemServico.dataUltimaMudancaStatus = ordemServico.dataCriacao;
+
+        return ordemServico;
+    }
+    
+    // Factory method para reconstrução a partir de dados persistidos
+    public static OrdemServico reconstruir(UUID id, UUID cliente, UUID veiculo,
+                                           StatusOS status, LocalDateTime dataCriacao,
+                                           LocalDateTime dataInicioExecucao, LocalDateTime dataFinalizacao,
+                                           LocalDateTime dataUltimaMudancaStatus) {
+        OrdemServico ordemServico = new OrdemServico();
+        ordemServico.id = id;
+        ordemServico.cliente = cliente;
+        ordemServico.veiculo = veiculo;
+        ordemServico.status = status;
+        ordemServico.dataCriacao = dataCriacao;
+        ordemServico.dataInicioExecucao = dataInicioExecucao;
+        ordemServico.dataFinalizacao = dataFinalizacao;
+        ordemServico.dataUltimaMudancaStatus = dataUltimaMudancaStatus;
+
+        return ordemServico;
+    }
+    
+    // Comportamentos de negócio
+    public ItemServico adicionarItemServico(ItemServico itemServico) {
+        validarAlteracaoServicosPermitida();
+        if (itemServico == null) {
+            throw new ValidacaoOrdemServicoException("Item de serviço não pode ser nulo");
+        }
+        itemServico.setOrdemServico(this);
+        itensServico.add(itemServico);
+        return itemServico;
+    }
+    
+    // Método interno para reconstrução do banco (sem validações)
+    public void adicionarItemServicoSemValidacao(ItemServico itemServico) {
+        if (itemServico != null) {
+            itemServico.setOrdemServico(this);
+            itensServico.add(itemServico);
+        }
+    }
+    
+    public void removerItemServico(UUID itemServicoId) {
+        validarAlteracaoServicosPermitida();
+        itensServico.removeIf(item -> item.getId().equals(itemServicoId));
+    }
+    
+    public void atualizarCliente(UUID cliente) {
+        validarAlteracaoClienteVeiculoPermitida();
+        if (cliente == null) {
+            throw new ValidacaoOrdemServicoException("Cliente não pode ser nulo");
+        }
+        this.cliente = cliente;
+    }
+    
+    public void atualizarVeiculo(UUID veiculo) {
+        validarAlteracaoClienteVeiculoPermitida();
+        if (veiculo == null) {
+            throw new ValidacaoOrdemServicoException("Veículo não pode ser nulo");
+        }
+        this.veiculo = veiculo;
+    }
+    
+    private void validarAlteracaoClienteVeiculoPermitida() {
+        if (this.status == StatusOS.EM_DIAGNOSTICO || 
+            this.status == StatusOS.AGUARDANDO_APROVACAO || 
+            this.status == StatusOS.EM_EXECUCAO ||
+            this.status == StatusOS.FINALIZADA ||
+            this.status == StatusOS.ENTREGUE) {
+            throw new ValidacaoOrdemServicoException(
+                "Não é permitido alterar cliente ou veículo quando a OS está no status " + this.status + 
+                ". Alterações apenas permitidas no status RECEBIDA.");
+        }
+    }
+    
+    private void validarAlteracaoServicosPermitida() {
+        if (this.status != StatusOS.RECEBIDA) {
+            throw new ValidacaoOrdemServicoException(
+                "Não é permitido adicionar ou remover serviços quando a OS está no status " + this.status + 
+                ". Alterações de serviços apenas permitidas no status RECEBIDA.");
+        }
+    }
+    
+    private void validarAlteracaoPermitida() {
+        if (this.status == StatusOS.EM_DIAGNOSTICO ||
+            this.status == StatusOS.AGUARDANDO_APROVACAO) {
+            throw new ValidacaoOrdemServicoException(
+                "Não é permitido alterar a OS quando ela está no status " + this.status +
+                ". Apenas a aprovação do orçamento é permitida no status AGUARDANDO_APROVACAO.");
+        }
+    }
+
+    private void logMudancaStatus(StatusOS statusAnterior, StatusOS statusAtual, LocalDateTime timestamp) {
+        String tempoEntreMudancas = "N/A";
+        if (dataUltimaMudancaStatus != null && statusAnterior != null) {
+            long segundos = java.time.Duration.between(dataUltimaMudancaStatus, timestamp).getSeconds();
+            tempoEntreMudancas = segundos + "s";
+        }
+
+        log.info("Status da OS alterado - OS ID: {}, Status Anterior: {}, Status Atual: {}, Tempo entre mudanças: {}",
+                this.id, statusAnterior != null ? statusAnterior : "N/A", statusAtual, tempoEntreMudancas);
+    }
+    
+    public void atualizarStatus(StatusOS novoStatus) {
+        if (novoStatus == null) {
+            throw new ValidacaoOrdemServicoException("Status não pode ser nulo");
+        }
+
+        StatusOS statusAnterior = this.status;
+
+        // Validar se a alteração de status é permitida no status atual
+        // Em AGUARDANDO_APROVACAO, apenas aprovarOrcamento (transição para EM_EXECUCAO) é permitida
+        if (this.status == StatusOS.AGUARDANDO_APROVACAO && novoStatus != StatusOS.EM_EXECUCAO) {
+            throw new ValidacaoOrdemServicoException(
+                "No status AGUARDANDO_APROVACAO, apenas a aprovação do orçamento é permitida. Status atual: " + this.status);
+        }
+
+        this.status = novoStatus;
+        LocalDateTime timestamp = LocalDateTime.now();
+
+        logMudancaStatus(statusAnterior, this.status, timestamp);
+
+        this.dataUltimaMudancaStatus = timestamp;
+    }
+    
+    public void enviarParaDiagnostico() {
+        if (this.status != StatusOS.RECEBIDA) {
+            throw new ValidacaoOrdemServicoException("Só é possível enviar para diagnóstico quando a OS está no status RECEBIDA. Status atual: " + this.status);
+        }
+        if (!possuiItensServico()) {
+            throw new ValidacaoOrdemServicoException("OS deve ter pelo menos um serviço para ser enviada para diagnóstico");
+        }
+
+        StatusOS statusAnterior = this.status;
+        this.status = StatusOS.EM_DIAGNOSTICO;
+        LocalDateTime timestamp = LocalDateTime.now();
+
+        logMudancaStatus(statusAnterior, this.status, timestamp);
+
+        this.dataUltimaMudancaStatus = timestamp;
+    }
+    
+    public void enviarOrcamentoAoCliente() {
+        enviarOrcamentoAoCliente(null, null, null);
+    }
+
+    public OrcamentoProntoEvent enviarOrcamentoAoCliente(
+            String payerEmail,
+            String payerIdentificationType,
+            String payerIdentificationNumber
+    ) {
+        validarEnvioOrcamentoAoCliente();
+        StatusOS statusAnterior = this.status;
+        this.status = StatusOS.AGUARDANDO_APROVACAO;
+        LocalDateTime timestamp = LocalDateTime.now();
+
+        logMudancaStatus(statusAnterior, this.status, timestamp);
+
+        this.dataUltimaMudancaStatus = timestamp;
+
+        String descricaoServicos = itensServico.stream()
+                .map(item -> item.getServicoNome() + ": " + item.getServicoDescricao())
+                .collect(java.util.stream.Collectors.joining("; "));
+        OrcamentoProntoEvent event = new OrcamentoProntoEvent(
+                id,
+                cliente,
+                veiculo,
+                calcularValorTotal(),
+                descricaoServicos,
+                timestamp,
+                payerEmail,
+                payerIdentificationType,
+                payerIdentificationNumber
+        );
+        registerEvent(event);
+        return event;
+    }
+
+    public void validarEnvioOrcamentoAoCliente() {
+        if (this.status != StatusOS.EM_DIAGNOSTICO) {
+            throw new ValidacaoOrdemServicoException("Só é possível enviar orçamento ao cliente quando a OS está no status EM_DIAGNOSTICO. Status atual: " + this.status);
+        }
+        if (!possuiItensServico()) {
+            throw new ValidacaoOrdemServicoException("OS deve ter pelo menos um serviço para enviar orçamento ao cliente");
+        }
+    }
+    
+    public void aprovarOrcamento() {
+        if (this.status != StatusOS.AGUARDANDO_APROVACAO) {
+            throw new ValidacaoOrdemServicoException("Só é possível aprovar orçamento quando a OS está no status AGUARDANDO_APROVACAO. Status atual: " + this.status);
+        }
+
+        StatusOS statusAnterior = this.status;
+        this.status = StatusOS.EM_EXECUCAO;
+        this.dataInicioExecucao = LocalDateTime.now();
+        LocalDateTime timestamp = LocalDateTime.now();
+
+        logMudancaStatus(statusAnterior, this.status, timestamp);
+
+        this.dataUltimaMudancaStatus = timestamp;
+
+        registerEvent(new ServicoIniciadoEvent(id, cliente, veiculo));
+    }
+
+    public void recusarOrcamento(String motivo) {
+        if (this.status != StatusOS.AGUARDANDO_APROVACAO) {
+            throw new ValidacaoOrdemServicoException(
+                "Só é possível recusar orçamento quando a OS está no status AGUARDANDO_APROVACAO. Status atual: " + this.status);
+        }
+
+        StatusOS statusAnterior = this.status;
+        this.status = StatusOS.CANCELADA;
+        this.dataFinalizacao = LocalDateTime.now();
+        LocalDateTime timestamp = LocalDateTime.now();
+
+        logMudancaStatus(statusAnterior, this.status, timestamp);
+
+        this.dataUltimaMudancaStatus = timestamp;
+
+        registerEvent(new OrcamentoRecusadoEvent(id, cliente, veiculo, motivo));
+    }
+    
+    public void finalizar() {
+        if (this.status != StatusOS.EM_EXECUCAO) {
+            throw new ValidacaoOrdemServicoException("Só é possível finalizar quando a OS está no status EM_EXECUCAO. Status atual: " + this.status);
+        }
+        if (!podeSerFinalizada()) {
+            throw new ValidacaoOrdemServicoException("OS só pode ser finalizada quando todos os serviços estiverem CONCLUIDO");
+        }
+
+        StatusOS statusAnterior = this.status;
+        this.status = StatusOS.FINALIZADA;
+        this.dataFinalizacao = LocalDateTime.now();
+        LocalDateTime timestamp = LocalDateTime.now();
+
+        logMudancaStatus(statusAnterior, this.status, timestamp);
+
+        this.dataUltimaMudancaStatus = timestamp;
+
+        BigDecimal valorTotal = calcularValorTotal();
+
+        registerEvent(new ServicoFinalizadoEvent(id, cliente, veiculo, valorTotal));
+    }
+    
+    public void verificarEFinalizarAutomaticamente() {
+        if (this.status == StatusOS.EM_EXECUCAO && podeSerFinalizada()) {
+            finalizar();
+        }
+    }
+    
+    public void entregar() {
+        if (this.status != StatusOS.FINALIZADA) {
+            throw new ValidacaoOrdemServicoException("Só é possível entregar quando a OS está no status FINALIZADA. Status atual: " + this.status);
+        }
+
+        StatusOS statusAnterior = this.status;
+        this.status = StatusOS.ENTREGUE;
+        LocalDateTime timestamp = LocalDateTime.now();
+
+        logMudancaStatus(statusAnterior, this.status, timestamp);
+
+        this.dataUltimaMudancaStatus = timestamp;
+
+        registerEvent(new VeiculoEntregueEvent(id, cliente, veiculo));
+    }
+    
+    public BigDecimal calcularValorTotal() {
+        return itensServico.stream()
+                .map(ItemServico::calcularValorTotal)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+    
+    // Validações
+    public boolean podeSerFinalizada() {
+        return status == StatusOS.EM_EXECUCAO && 
+               itensServico.stream().allMatch(item -> item.getStatus() == StatusItemServico.CONCLUIDO);
+    }
+    
+    public boolean possuiItensServico() {
+        return !itensServico.isEmpty();
+    }
+    
+    // Métodos de acesso para JPA
+    public List<ItemServico> getItensServico() {
+        return new ArrayList<>(itensServico);
+    }
+}
