@@ -40,3 +40,18 @@ o Launch Template dos nodes com IMDSv2 e hop limit 2 e as permissões de mensage
 na `LabRole`. Ela pode publicar em todos os tópicos e enviar/consumir mensagens em
 todas as filas SNS/SQS provisionadas pelo módulo. Os pods obtêm credenciais da role
 do node; por isso, outros pods no mesmo node também podem herdar essas permissões.
+
+## API e autenticação
+
+Localmente, os endpoints de gestão usam `/v1/os` na porta `8081`; em produção,
+acrescente o prefixo `/v1/os-service` do API Gateway. O ciclo operacional inclui
+`POST /v1/os`, `POST /v1/os/{id}/enviar-para-diagnostico` e
+`POST /v1/os/{id}/enviar-orcamento-ao-cliente`. A consulta
+`GET /v1/os/{id}` aceita tokens `ADMIN` e `SERVICE`; as demais operações de gestão
+exigem `ADMIN`. As rotas `/api/cliente/os/**` exigem JWT `CLIENTE` e retornam
+ordens associadas ao cliente autenticado. Health, actuator e Swagger são públicos.
+
+O serviço valida JWTs com HMAC e `JWT_SECRET`; use a mesma chave no Auth Lambda e
+nos três microsserviços. O OS consulta clientes, veículos, serviços e MROs pelo
+`catalog-service`, sem compartilhar tabelas nem acessar diretamente o database
+`catalog_db`. IDs desses recursos são referências externas no `os_db`.
